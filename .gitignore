@@ -1,0 +1,27 @@
+# Runtime data
+data/
+*.db
+events.jsonl
+dispatcher.log
+dispatcher-error.log
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
