@@ -9,6 +9,16 @@
 
 ---
 
+## Screenshots
+
+> Screenshots will be added after first production deployment.
+
+<!-- TODO: Add screenshots
+![Kanban Dashboard](docs/screenshots/kanban.png)
+![Ecosystem Panel](docs/screenshots/ecosystem.png)
+![Real-time Monitor](docs/screenshots/monitor.png)
+-->
+
 ## Features
 
 - **Kanban Board** &mdash; 5-column board (Queued / Scheduled / Running / Completed / Failed) with drag-and-drop job management
@@ -17,6 +27,7 @@
 - **Budget Guard** &mdash; Daily token budget with per-job limits (`--max-budget-usd`) to prevent overspending
 - **Dependency Graph** &mdash; Jobs can declare `blocked_by` dependencies (inspired by [Beads](https://github.com/steveyegge/beads))
 - **Job Templates** &mdash; Pre-defined templates for common tasks (code review, ticket analysis, docs generation)
+- **Ecosystem Panel** &mdash; Unified view of Dominium ecosystem state (sentinels, work rhythm, PR watch)
 - **CLI Skill (`/cc`)** &mdash; Manage jobs directly from Claude Code without opening the dashboard
 - **launchd Dispatcher** &mdash; macOS-native scheduler that auto-dispatches jobs every 10 minutes, surviving reboots
 
@@ -90,7 +101,7 @@ launchctl load ~/Library/LaunchAgents/com.dominium.command-center.plist
 | Layer | Technology |
 |-------|-----------|
 | Backend | Python 3.12, FastAPI, uvicorn, aiosqlite, Pydantic v2 |
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, React Query |
+| Frontend | React 19, TypeScript, Vite 7, Tailwind CSS v4, React Query v5 |
 | Database | SQLite (jobs, time slots, budget) |
 | Event Log | JSONL (append-only session events) |
 | Scheduler | macOS launchd (10-minute interval) |
