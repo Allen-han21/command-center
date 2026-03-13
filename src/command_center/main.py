@@ -12,7 +12,8 @@ from fastapi.staticfiles import StaticFiles
 
 from command_center import db
 from command_center.config import FRONTEND_DIST, HOST, PORT
-from command_center.routers import budget, dashboard, jobs, time_slots
+from command_center.routers import budget, dashboard, jobs, sessions, time_slots
+from command_center.services.monitor import start_monitor, stop_monitor
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -22,8 +23,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     await db.init_db()
     logger.info("DB 초기화 완료")
+    start_monitor()
     logger.info("Command Center 준비 완료 → http://%s:%d", HOST, PORT)
     yield
+    stop_monitor()
     logger.info("Command Center 종료")
 
 
@@ -55,6 +58,7 @@ app.include_router(jobs.router)
 app.include_router(time_slots.router)
 app.include_router(budget.router)
 app.include_router(dashboard.router)
+app.include_router(sessions.router)
 
 if FRONTEND_DIST.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="frontend")

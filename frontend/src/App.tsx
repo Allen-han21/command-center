@@ -3,13 +3,16 @@ import { KanbanBoard } from "./components/kanban/KanbanBoard";
 import { DayTimeline } from "./components/timeline/DayTimeline";
 import { BudgetGauge } from "./components/timeline/BudgetGauge";
 import { JobForm } from "./components/job/JobForm";
+import { SessionPanel } from "./components/session/SessionPanel";
 import { DashboardHeader } from "./components/DashboardHeader";
+import { useWebSocket } from "./hooks/useWebSocket";
 
 type Tab = "kanban" | "timeline";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("kanban");
   const [showForm, setShowForm] = useState(false);
+  const { sessions, connected, requestOutput, outputData } = useWebSocket();
 
   return (
     <div className="min-h-screen">
@@ -46,6 +49,16 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* Live session monitor */}
+        <div className="mt-4">
+          <SessionPanel
+            sessions={sessions}
+            connected={connected}
+            requestOutput={requestOutput}
+            outputData={outputData}
+          />
+        </div>
       </div>
 
       {showForm && <JobForm onClose={() => setShowForm(false)} />}

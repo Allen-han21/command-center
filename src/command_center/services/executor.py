@@ -11,6 +11,7 @@ from pathlib import Path
 
 from command_center.config import DATA_DIR
 from command_center import db
+from command_center.services.monitor import manager, notify_job_complete
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,8 @@ async def run_job(job: dict) -> None:
                 "pid": None,
             })
             logger.info("Job %s 완료", job_id)
+            await _broadcast_status(job_id, job["title"], "completed")
+            await notify_job_complete(job["title"], "completed")
         else:
             error_msg = (stderr_bytes or b"").decode(errors="replace")[:500]
             await _handle_failure(job, error_msg)
@@ -153,3 +156,15 @@ async def _handle_failure(job: dict, error_msg: str) -> None:
             "pid": None,
         })
         logger.error("Job %s 실패 (재시도 소진): %s", job_id, error_msg)
+        await _broadcast_status(job_id, job["title"], "failed")
+        await notify_job_complete(job["title"], "failed")
+
+
+async def _broadcast_status(job_id: str, title: str, status: str) -> None:
+    """WS로 Job 상태 변경 이벤트 브로드캐스트"""
+    await manager.broadcast({
+        "type": "job_status",
+        "job_id": job_id,
+        "title": title,
+        "status": status,
+    })
