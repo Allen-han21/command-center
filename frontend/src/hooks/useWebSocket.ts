@@ -46,7 +46,7 @@ interface UseWebSocketReturn {
 
 export function useWebSocket(): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<JobStatusEvent | null>(null);
@@ -76,7 +76,7 @@ export function useWebSocket(): UseWebSocketReturn {
             total: msg.total,
           });
         }
-      } catch {
+      } catch (_e) {
         // ignore parse errors
       }
     };

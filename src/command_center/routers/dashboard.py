@@ -9,6 +9,7 @@ from fastapi import APIRouter
 from command_center import db
 from command_center.config import DEFAULT_TIME_SLOTS
 from command_center.models import DashboardSummary
+from command_center.services.integrator import get_sentinels, get_latest_rhythm
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -46,6 +47,10 @@ async def get_dashboard():
     ][-5:]
     failed = [j for j in all_jobs if j["status"] == "failed"]
 
+    # Ecosystem integration
+    sentinel_entries, _ = get_sentinels(pending_only=True, limit=100)
+    rhythm = get_latest_rhythm()
+
     return DashboardSummary(
         running_jobs=len(running),
         queued_jobs=len(queued),
@@ -55,4 +60,7 @@ async def get_dashboard():
         next_slot=_next_slot(slots),
         recent_completed=[{"id": j["id"], "title": j["title"], "completed_at": j.get("completed_at")} for j in recent_completed],
         failed_jobs=[{"id": j["id"], "title": j["title"], "error_message": j.get("error_message")} for j in failed],
+        sentinels_pending=len(sentinel_entries),
+        rhythm_cycle=rhythm.type if rhythm else None,
+        rhythm_phase=rhythm.current_phase if rhythm else None,
     )

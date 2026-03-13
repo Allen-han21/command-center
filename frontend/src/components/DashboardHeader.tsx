@@ -24,6 +24,14 @@ export function DashboardHeader() {
                   : "var(--color-completed)"
               }
             />
+            {data.sentinels_pending > 0 && (
+              <Stat label="Sentinels" value={data.sentinels_pending} color="var(--color-scheduled)" />
+            )}
+            {data.rhythm_phase && (
+              <span className="text-[var(--color-text-muted)]">
+                Rhythm: <span className="text-[var(--color-completed)]">{data.rhythm_phase}</span>
+              </span>
+            )}
             {data.next_slot && (
               <span className="text-[var(--color-text-muted)]">
                 Next: <span className="text-[var(--color-scheduled)]">{data.next_slot}</span>

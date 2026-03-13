@@ -4,10 +4,11 @@ import { DayTimeline } from "./components/timeline/DayTimeline";
 import { BudgetGauge } from "./components/timeline/BudgetGauge";
 import { JobForm } from "./components/job/JobForm";
 import { SessionPanel } from "./components/session/SessionPanel";
+import { EcosystemPanel } from "./components/ecosystem/EcosystemPanel";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { useWebSocket } from "./hooks/useWebSocket";
 
-type Tab = "kanban" | "timeline";
+type Tab = "kanban" | "timeline" | "ecosystem";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("kanban");
@@ -27,6 +28,9 @@ export default function App() {
             </TabButton>
             <TabButton active={tab === "timeline"} onClick={() => setTab("timeline")}>
               Timeline
+            </TabButton>
+            <TabButton active={tab === "ecosystem"} onClick={() => setTab("ecosystem")}>
+              Ecosystem
             </TabButton>
           </div>
           <button
@@ -49,6 +53,7 @@ export default function App() {
             </div>
           </div>
         )}
+        {tab === "ecosystem" && <EcosystemPanel />}
 
         {/* Live session monitor */}
         <div className="mt-4">

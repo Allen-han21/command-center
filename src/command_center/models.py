@@ -115,3 +115,7 @@ class DashboardSummary(BaseModel):
     next_slot: str | None
     recent_completed: list[dict]
     failed_jobs: list[dict]
+    # Ecosystem integration
+    sentinels_pending: int = 0
+    rhythm_cycle: str | None = None
+    rhythm_phase: str | None = None

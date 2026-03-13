@@ -9,6 +9,7 @@ import pytest
 import pytest_asyncio
 
 from command_center import config, db
+from command_center.services import integrator
 
 
 @pytest.fixture(scope="session")
@@ -27,6 +28,14 @@ def _use_tmp_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     # db 모듈이 config를 직접 임포트하므로 db 모듈 내부도 패치
     monkeypatch.setattr(db, "DB_PATH", test_db)
     monkeypatch.setattr(db, "DATA_DIR", tmp_path)
+    # integrator가 실제 ~/.claude를 읽지 않도록 격리
+    claude_dir = tmp_path / ".claude"
+    (claude_dir / "sentinel").mkdir(parents=True, exist_ok=True)
+    (claude_dir / "rhythm").mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(integrator, "CLAUDE_DIR", claude_dir)
+    monkeypatch.setattr(integrator, "SENTINEL_DIR", claude_dir / "sentinel")
+    monkeypatch.setattr(integrator, "RHYTHM_DIR", claude_dir / "rhythm")
+    monkeypatch.setattr(integrator, "PR_WATCH_STATE", claude_dir / "pr-watch" / "state.json")
 
 
 @pytest_asyncio.fixture

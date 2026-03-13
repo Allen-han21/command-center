@@ -83,6 +83,9 @@ export interface DashboardSummary {
   next_slot: string | null;
   recent_completed: { id: string; title: string; completed_at: string | null }[];
   failed_jobs: { id: string; title: string; error_message: string | null }[];
+  sentinels_pending: number;
+  rhythm_cycle: string | null;
+  rhythm_phase: string | null;
 }
 
 export const dashboard = {
@@ -118,6 +121,41 @@ export interface Budget {
   job_count: number;
   remaining_usd: number;
 }
+
+// ── Ecosystem ──
+
+export interface SentinelEntry {
+  session_id: string;
+  project_id: string | null;
+  ticket_id: string | null;
+  name: string;
+  current_phase: string;
+  pending_count: number;
+  timestamp: string;
+  is_work: boolean;
+}
+
+export interface EcosystemSummary {
+  sentinels_pending: SentinelEntry[];
+  sentinels_total: number;
+  rhythm: {
+    cycle_id: string;
+    date: string;
+    type: string;
+    current_phase: string;
+  } | null;
+  pr_watch: {
+    last_check: string;
+    reviewed_count: number;
+    pending_prs: { number: number; title: string }[];
+  } | null;
+}
+
+export const ecosystem = {
+  get: () => request<EcosystemSummary>("/ecosystem"),
+  sentinels: (pendingOnly = true) =>
+    request<SentinelEntry[]>(`/ecosystem/sentinels?pending_only=${pendingOnly}`),
+};
 
 export const budget = {
   get: () => request<Budget>("/budget/today"),

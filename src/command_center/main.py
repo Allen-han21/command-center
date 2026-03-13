@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from command_center import db
 from command_center.config import FRONTEND_DIST, HOST, PORT
-from command_center.routers import budget, dashboard, jobs, sessions, time_slots
+from command_center.routers import budget, dashboard, ecosystem, jobs, sessions, time_slots
 from command_center.services.monitor import start_monitor, stop_monitor
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -59,6 +59,7 @@ app.include_router(time_slots.router)
 app.include_router(budget.router)
 app.include_router(dashboard.router)
 app.include_router(sessions.router)
+app.include_router(ecosystem.router)
 
 if FRONTEND_DIST.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="frontend")
