@@ -88,7 +88,7 @@ def test_get_sentinels_limit(mock_claude_dir):
 
 def test_get_sentinels_work_detection(mock_claude_dir):
     sentinel_dir = mock_claude_dir / "sentinel"
-    _write_sentinel(sentinel_dir, "2026-03-14-PK-34080-CP1", ticket_id="PK-34080")
+    _write_sentinel(sentinel_dir, "2026-03-14-PK-99999-CP1", ticket_id="PK-99999")
     _write_sentinel(sentinel_dir, "2026-03-14-personal-CP1", project_id="personal")
 
     entries, _ = integrator.get_sentinels(pending_only=False)
