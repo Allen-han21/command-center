@@ -188,9 +188,10 @@ async def create_job(data: dict) -> dict:
 async def update_job(job_id: str, data: dict) -> dict | None:
     fields = []
     params = []
+    # _UNSET: 키 자체가 없으면 skip. 명시적 None은 SQL NULL로 설정.
+    # API 라우터는 exclude_none=True로 호출하므로 None이 넘어오지 않고,
+    # 서비스 레이어(executor 등)에서 pid=None 같은 명시적 초기화에 사용.
     for key, value in data.items():
-        if value is None:
-            continue
         if key == "blocked_by":
             fields.append("blocked_by = ?")
             params.append(json.dumps(value))
