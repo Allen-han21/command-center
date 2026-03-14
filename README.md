@@ -11,13 +11,7 @@
 
 ## Screenshots
 
-> Screenshots will be added after first production deployment.
-
-<!-- TODO: Add screenshots
-![Kanban Dashboard](docs/screenshots/kanban.png)
-![Ecosystem Panel](docs/screenshots/ecosystem.png)
-![Real-time Monitor](docs/screenshots/monitor.png)
--->
+> Coming soon &mdash; run `./scripts/dev.sh` and visit `http://localhost:5174` to see the dashboard live.
 
 ## Features
 
