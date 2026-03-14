@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import time
+from datetime import datetime, time, timedelta
 
 import pytest
 import pytest_asyncio
@@ -10,6 +10,7 @@ import pytest_asyncio
 from command_center import db
 from command_center.services.scheduler import (
     _are_deps_resolved,
+    _is_scheduled_ready,
     _is_slot_match,
     _time_in_slot,
     pick_next_job,
@@ -125,6 +126,33 @@ class TestAreDepsResolved:
         assert _are_deps_resolved(job, set()) is True
 
 
+# ── Level 1: _is_scheduled_ready (pure function) ──
+
+
+class TestIsScheduledReady:
+    def test_no_scheduled_at(self):
+        """scheduled_at이 None이면 항상 실행 가능."""
+        assert _is_scheduled_ready({"scheduled_at": None}) is True
+
+    def test_empty_string(self):
+        """빈 문자열도 실행 가능."""
+        assert _is_scheduled_ready({"scheduled_at": ""}) is True
+
+    def test_past_time_ready(self):
+        """과거 시각이면 실행 가능."""
+        past = (datetime.now() - timedelta(hours=1)).isoformat()
+        assert _is_scheduled_ready({"scheduled_at": past}) is True
+
+    def test_future_time_not_ready(self):
+        """미래 시각이면 실행 불가."""
+        future = (datetime.now() + timedelta(hours=1)).isoformat()
+        assert _is_scheduled_ready({"scheduled_at": future}) is False
+
+    def test_invalid_format_returns_true(self):
+        """파싱 불가 시 blocking 방지를 위해 True."""
+        assert _is_scheduled_ready({"scheduled_at": "not-a-date"}) is True
+
+
 # ── Level 3: pick_next_job (integration) ──
 
 
@@ -178,3 +206,38 @@ class TestPickNextJob:
 
         job = await pick_next_job()
         assert job is None
+
+    @pytest.mark.asyncio
+    async def test_scheduled_at_future_skipped(self, init_test_db):
+        """scheduled_at이 미래인 job은 건너뛰고, 즉시 실행 가능한 job을 선택."""
+        await db.update_time_slot("anytime", {"enabled": True})
+        future = (datetime.now() + timedelta(hours=2)).isoformat()
+        await db.create_job({
+            "title": "future-job",
+            "prompt": "x",
+            "priority": 1,
+            "time_slot": "anytime",
+            "scheduled_at": future,
+        })
+        await db.create_job({"title": "now-job", "prompt": "x", "priority": 5, "time_slot": "anytime"})
+
+        job = await pick_next_job()
+        assert job is not None
+        assert job["title"] == "now-job"
+
+    @pytest.mark.asyncio
+    async def test_scheduled_at_past_picked(self, init_test_db):
+        """scheduled_at이 과거인 job은 정상적으로 선택."""
+        await db.update_time_slot("anytime", {"enabled": True})
+        past = (datetime.now() - timedelta(hours=1)).isoformat()
+        await db.create_job({
+            "title": "past-scheduled",
+            "prompt": "x",
+            "priority": 1,
+            "time_slot": "anytime",
+            "scheduled_at": past,
+        })
+
+        job = await pick_next_job()
+        assert job is not None
+        assert job["title"] == "past-scheduled"

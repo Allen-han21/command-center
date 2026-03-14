@@ -37,7 +37,11 @@ async def pick_next_job() -> dict | None:
     queued_jobs = await db.list_jobs(status="queued")
 
     for job in queued_jobs:
-        if _is_slot_match(job, active_slot) and _are_deps_resolved(job, completed_ids):
+        if (
+            _is_slot_match(job, active_slot)
+            and _are_deps_resolved(job, completed_ids)
+            and _is_scheduled_ready(job)
+        ):
             return job
 
     return None
@@ -91,6 +95,22 @@ def _is_slot_match(job: dict, active_slot: dict) -> bool:
     if active_slot["name"] == "anytime" or job_slot == "anytime":
         return True
     return job_slot == active_slot["name"]
+
+
+def _is_scheduled_ready(job: dict) -> bool:
+    """scheduled_at이 설정된 경우, 현재 시각이 그 이후인지 확인.
+
+    scheduled_at이 None이면 항상 실행 가능.
+    """
+    scheduled_at = job.get("scheduled_at")
+    if not scheduled_at:
+        return True
+    try:
+        target = datetime.fromisoformat(scheduled_at)
+        return datetime.now() >= target
+    except (ValueError, TypeError):
+        logger.warning("잘못된 scheduled_at 형식: %s (Job %s)", scheduled_at, job.get("id"))
+        return True  # 파싱 실패 시 실행 허용 (blocking 방지)
 
 
 def _are_deps_resolved(job: dict, completed_ids: set[str]) -> bool:
