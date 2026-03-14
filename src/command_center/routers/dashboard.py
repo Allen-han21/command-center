@@ -43,7 +43,7 @@ async def get_dashboard():
     queued = [j for j in all_jobs if j["status"] == "queued"]
     recent_completed = [
         j for j in all_jobs
-        if j["status"] == "completed" and j.get("completed_at", "")[:10] == today
+        if j["status"] == "completed" and (j.get("completed_at") or "")[:10] == today
     ][-5:]
     failed = [j for j in all_jobs if j["status"] == "failed"]
 
