@@ -40,7 +40,7 @@ cat > "$PLIST_PATH" <<EOF
     <integer>600</integer>
 
     <key>RunAtLoad</key>
-    <false/>
+    <true/>
 
     <key>StandardOutPath</key>
     <string>${LOG_DIR}/launchd_stdout.log</string>
@@ -53,7 +53,7 @@ cat > "$PLIST_PATH" <<EOF
         <key>PYTHONPATH</key>
         <string>${PROJECT_DIR}/src</string>
         <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:$HOME/.local/bin</string>
     </dict>
 </dict>
 </plist>

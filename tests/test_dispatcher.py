@@ -135,7 +135,7 @@ async def test_priority_ordering(init_test_db):
     """여러 Job이 있을 때 priority가 높은(숫자 낮은) Job부터 실행."""
     await db.update_time_slot("anytime", {"enabled": True})
 
-    await db.create_job({"title": "Low P", "prompt": "x", "priority": 8, "time_slot": "anytime"})
+    low = await db.create_job({"title": "Low P", "prompt": "x", "priority": 8, "time_slot": "anytime"})
     high = await db.create_job({"title": "High P", "prompt": "x", "priority": 1, "time_slot": "anytime"})
 
     executed_ids = []
@@ -147,9 +147,10 @@ async def test_priority_ordering(init_test_db):
     with patch("command_center.dispatcher.run_job", side_effect=fake_run_job):
         await dispatcher_main()
 
-    # dispatcher는 1회 실행 시 job 1개만 처리
-    assert len(executed_ids) == 1
-    assert executed_ids[0] == high["id"]  # priority 1이 먼저
+    # drain loop: 모든 queued Job을 priority 순서로 처리
+    assert len(executed_ids) == 2
+    assert executed_ids[0] == high["id"]  # priority 1 먼저
+    assert executed_ids[1] == low["id"]   # priority 8 나중
 
 
 @pytest.mark.asyncio
@@ -158,7 +159,7 @@ async def test_dependency_blocks_execution(init_test_db):
     await db.update_time_slot("anytime", {"enabled": True})
 
     dep = await db.create_job({"title": "Dep", "prompt": "x", "priority": 5, "time_slot": "anytime"})
-    await db.create_job({
+    blocked = await db.create_job({
         "title": "Blocked",
         "prompt": "x",
         "priority": 1,  # 이게 priority 더 높지만 의존성 미해결
@@ -176,5 +177,100 @@ async def test_dependency_blocks_execution(init_test_db):
     with patch("command_center.dispatcher.run_job", side_effect=fake_run_job):
         await dispatcher_main()
 
-    # Blocked는 건너뛰고 Free를 실행 (Dep보다 priority 높음)
-    assert executed_ids == [free["id"]]
+    # drain loop: Free(p3) 먼저, Dep(p5) 다음, Blocked(p1)는 Dep 완료 후 실행
+    assert executed_ids == [free["id"], dep["id"], blocked["id"]]
+
+
+@pytest.mark.asyncio
+async def test_drain_loop_processes_all_queued(init_test_db):
+    """활성 슬롯 동안 대기 중인 모든 Job을 연속 처리."""
+    await db.update_time_slot("anytime", {"enabled": True})
+
+    jobs = []
+    for i in range(4):
+        j = await db.create_job({
+            "title": f"Job {i}",
+            "prompt": "x",
+            "priority": 5,
+            "time_slot": "anytime",
+            "max_budget": 1.0,
+        })
+        jobs.append(j)
+
+    executed_ids = []
+
+    async def fake_run_job(j):
+        executed_ids.append(j["id"])
+        await db.update_job(j["id"], {"status": "completed"})
+
+    with patch("command_center.dispatcher.run_job", side_effect=fake_run_job):
+        await dispatcher_main()
+
+    assert len(executed_ids) == 4
+    assert executed_ids == [j["id"] for j in jobs]
+
+
+@pytest.mark.asyncio
+async def test_drain_loop_stops_on_budget_exhaustion(init_test_db):
+    """예산 부족 시 남은 Job을 실행하지 않고 종료."""
+    await db.update_time_slot("anytime", {"enabled": True})
+    today = date.today().isoformat()
+    await db.add_budget_spent(today, 8.0)  # $10 중 $8 소진
+
+    j1 = await db.create_job({
+        "title": "Fits", "prompt": "x", "time_slot": "anytime",
+        "max_budget": 1.5, "priority": 1,
+    })
+    await db.create_job({
+        "title": "Too expensive", "prompt": "x", "time_slot": "anytime",
+        "max_budget": 3.0, "priority": 2,
+    })
+
+    executed_ids = []
+
+    async def fake_run_job(j):
+        executed_ids.append(j["id"])
+        await db.update_job(j["id"], {"status": "completed"})
+
+    with patch("command_center.dispatcher.run_job", side_effect=fake_run_job):
+        await dispatcher_main()
+
+    # 첫 번째 Job만 실행 ($8 + $1.5 = $9.5), 두 번째는 $9.5 + $3.0 > $10 → 스킵
+    assert executed_ids == [j1["id"]]
+
+
+@pytest.mark.asyncio
+async def test_drain_loop_continues_after_failed_job(init_test_db):
+    """실패한 Job 이후에도 다음 Job을 계속 처리."""
+    await db.update_time_slot("anytime", {"enabled": True})
+
+    j1 = await db.create_job({
+        "title": "Will Fail", "prompt": "x", "time_slot": "anytime",
+        "priority": 1, "max_retries": 0,
+    })
+    j2 = await db.create_job({
+        "title": "Will Succeed", "prompt": "x", "time_slot": "anytime",
+        "priority": 2,
+    })
+
+    executed_ids = []
+    call_count = 0
+
+    async def fake_run_job(j):
+        nonlocal call_count
+        executed_ids.append(j["id"])
+        call_count += 1
+        if call_count == 1:
+            await db.update_job(j["id"], {"status": "failed", "error_message": "mock"})
+        else:
+            await db.update_job(j["id"], {"status": "completed"})
+
+    with patch("command_center.dispatcher.run_job", side_effect=fake_run_job):
+        await dispatcher_main()
+
+    assert executed_ids == [j1["id"], j2["id"]]
+
+    # 실패한 Job은 지출 미기록, 성공한 Job만 기록
+    today = date.today().isoformat()
+    budget = await db.get_budget(today)
+    assert budget["job_count"] == 1

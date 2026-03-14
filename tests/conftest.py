@@ -36,6 +36,8 @@ def _use_tmp_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(integrator, "SENTINEL_DIR", claude_dir / "sentinel")
     monkeypatch.setattr(integrator, "RHYTHM_DIR", claude_dir / "rhythm")
     monkeypatch.setattr(integrator, "PR_WATCH_STATE", claude_dir / "pr-watch" / "state.json")
+    # dispatcher의 중첩 세션 방어를 테스트 환경에서 해제
+    monkeypatch.delenv("CLAUDECODE", raising=False)
 
 
 @pytest_asyncio.fixture
