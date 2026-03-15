@@ -6,9 +6,10 @@ interface Props {
   label: string;
   color: string;
   jobs: Job[];
+  onJobClick?: (job: Job) => void;
 }
 
-export function KanbanColumn({ label, color, jobs }: Props) {
+export function KanbanColumn({ label, color, jobs, onJobClick }: Props) {
   return (
     <div className="flex flex-col rounded-xl bg-[var(--color-surface)] overflow-hidden">
       {/* Header */}
@@ -27,7 +28,7 @@ export function KanbanColumn({ label, color, jobs }: Props) {
             No jobs
           </div>
         ) : (
-          jobs.map((job) => <JobCard key={job.id} job={job} />)
+          jobs.map((job) => <JobCard key={job.id} job={job} onClick={() => onJobClick?.(job)} />)
         )}
       </div>
     </div>

@@ -14,7 +14,7 @@ const MODEL_LABELS: Record<string, string> = {
   haiku: "H",
 };
 
-export function JobCard({ job }: { job: Job }) {
+export function JobCard({ job, onClick }: { job: Job; onClick?: () => void }) {
   const qc = useQueryClient();
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["jobs"] });
@@ -29,7 +29,10 @@ export function JobCard({ job }: { job: Job }) {
     : null;
 
   return (
-    <div className="rounded-lg bg-[var(--color-bg)] p-3 border border-[var(--color-border)] hover:border-[var(--color-surface-hover)] transition-colors group">
+    <div
+      className="rounded-lg bg-[var(--color-bg)] p-3 border border-[var(--color-border)] hover:border-[var(--color-surface-hover)] transition-colors group cursor-pointer"
+      onClick={onClick}
+    >
       {/* Title + priority */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-sm font-medium leading-snug line-clamp-2">{job.title}</span>
@@ -60,7 +63,7 @@ export function JobCard({ job }: { job: Job }) {
       )}
 
       {/* Actions */}
-      <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
         {(job.status === "queued" || job.status === "scheduled") && (
           <ActionBtn onClick={() => cancelMut.mutate()} disabled={cancelMut.isPending}>
             Cancel

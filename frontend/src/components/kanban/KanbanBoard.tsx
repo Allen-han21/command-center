@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { jobs as jobsApi, type Job } from "../../lib/api";
 import { KanbanColumn } from "./KanbanColumn";
+import { JobDetailModal } from "../job/JobDetailModal";
+import { ContinueJobForm } from "../job/ContinueJobForm";
 
 const COLUMNS: { status: Job["status"]; label: string; color: string }[] = [
   { status: "queued", label: "Queued", color: "var(--color-queued)" },
@@ -15,6 +18,9 @@ export function KanbanBoard() {
     queryKey: ["jobs"],
     queryFn: () => jobsApi.list(),
   });
+
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [showContinue, setShowContinue] = useState(false);
 
   if (isLoading) {
     return (
@@ -31,11 +37,30 @@ export function KanbanBoard() {
       .sort((a, b) => a.priority - b.priority),
   }));
 
+  const closeAll = () => {
+    setSelectedJob(null);
+    setShowContinue(false);
+  };
+
   return (
-    <div className="grid grid-cols-5 gap-3 min-h-[calc(100vh-10rem)]">
-      {grouped.map((col) => (
-        <KanbanColumn key={col.status} {...col} />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-5 gap-3 min-h-[calc(100vh-10rem)]">
+        {grouped.map((col) => (
+          <KanbanColumn key={col.status} {...col} onJobClick={setSelectedJob} />
+        ))}
+      </div>
+
+      {selectedJob && !showContinue && (
+        <JobDetailModal
+          job={selectedJob}
+          onClose={closeAll}
+          onContinue={() => setShowContinue(true)}
+        />
+      )}
+
+      {selectedJob && showContinue && (
+        <ContinueJobForm parentJob={selectedJob} onClose={closeAll} />
+      )}
+    </>
   );
 }

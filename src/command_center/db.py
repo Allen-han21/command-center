@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     retry_count INTEGER NOT NULL DEFAULT 0,
     max_retries INTEGER NOT NULL DEFAULT 2,
     jira_ticket TEXT,
+    parent_job_id TEXT,
+    resume_session_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     started_at TEXT,
     completed_at TEXT
@@ -70,6 +72,13 @@ async def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript(SCHEMA)
+
+        # 마이그레이션: 기존 DB에 새 컬럼 추가
+        for col in ("parent_job_id TEXT", "resume_session_id TEXT"):
+            try:
+                await db.execute(f"ALTER TABLE jobs ADD COLUMN {col}")
+            except Exception:
+                pass  # 이미 존재하면 무시
 
         # 기본 time_slot 삽입
         cursor = await db.execute("SELECT COUNT(*) FROM time_slots")
@@ -161,8 +170,9 @@ async def create_job(data: dict) -> dict:
             """INSERT INTO jobs
                (id, title, prompt, work_dir, priority, time_slot, scheduled_at,
                 max_budget, timeout_min, model, effort, use_worktree,
-                blocked_by, max_retries, jira_ticket)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                blocked_by, max_retries, jira_ticket,
+                parent_job_id, resume_session_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 job_id,
                 data["title"],
@@ -179,6 +189,8 @@ async def create_job(data: dict) -> dict:
                 blocked_by_json,
                 data.get("max_retries", 2),
                 data.get("jira_ticket"),
+                data.get("parent_job_id"),
+                data.get("resume_session_id"),
             ),
         )
         await db.commit()

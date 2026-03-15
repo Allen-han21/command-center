@@ -31,6 +31,8 @@ class JobCreate(BaseModel):
     blocked_by: list[str] = Field(default_factory=list)
     jira_ticket: str | None = None
     max_retries: int = Field(default=2, ge=0)
+    parent_job_id: str | None = None
+    resume_session_id: str | None = None
 
 
 class JobUpdate(BaseModel):
@@ -66,6 +68,8 @@ class Job(BaseModel):
     retry_count: int
     max_retries: int
     jira_ticket: str | None
+    parent_job_id: str | None
+    resume_session_id: str | None
     created_at: str
     started_at: str | None
     completed_at: str | None

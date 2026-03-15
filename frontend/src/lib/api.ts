@@ -38,6 +38,8 @@ export interface Job {
   retry_count: number;
   max_retries: number;
   jira_ticket: string | null;
+  parent_job_id: string | null;
+  resume_session_id: string | null;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
@@ -56,6 +58,20 @@ export interface JobCreate {
   blocked_by?: string[];
   jira_ticket?: string;
   max_retries?: number;
+  parent_job_id?: string;
+  resume_session_id?: string;
+}
+
+export interface JobOutputLine {
+  index: number;
+  type: string;
+  text: string;
+}
+
+export interface JobOutput {
+  job_id: string;
+  lines: JobOutputLine[];
+  total: number;
 }
 
 export const jobs = {
@@ -70,6 +86,8 @@ export const jobs = {
     request<Job>(`/jobs/${id}/retry`, { method: "POST" }),
   delete: (id: string) =>
     request<void>(`/jobs/${id}`, { method: "DELETE" }),
+  getOutput: (id: string, limit = 200) =>
+    request<JobOutput>(`/jobs/${id}/output?limit=${limit}`),
 };
 
 // ── Dashboard ──

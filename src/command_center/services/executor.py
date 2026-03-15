@@ -29,6 +29,7 @@ async def run_job(job: dict) -> None:
     job_id = job["id"]
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = str(OUTPUT_DIR / f"{job_id}.jsonl")
+    resume_session_id = job.get("resume_session_id")
     session_id = job.get("session_id") or str(uuid.uuid4())
 
     await db.update_job(job_id, {
@@ -38,7 +39,7 @@ async def run_job(job: dict) -> None:
         "started_at": datetime.now(timezone.utc).isoformat(),
     })
 
-    cmd = _build_cmd(job, session_id)
+    cmd = _build_cmd(job, session_id, resume_session_id)
     timeout_sec = (job.get("timeout_min") or 30) * 60
     proc: asyncio.subprocess.Process | None = None
 
@@ -90,7 +91,7 @@ async def run_job(job: dict) -> None:
         logger.exception("Job %s 실행 중 예외", job_id)
 
 
-def _build_cmd(job: dict, session_id: str) -> list[str]:
+def _build_cmd(job: dict, session_id: str, resume_session_id: str | None = None) -> list[str]:
     """claude CLI 명령어 구성"""
     model = _MODEL_MAP.get(job.get("model", "sonnet"), "claude-sonnet-4-6")
     effort = job.get("effort", "high")
@@ -101,11 +102,14 @@ def _build_cmd(job: dict, session_id: str) -> list[str]:
         "--output-format", "stream-json",
         "--permission-mode", "dontAsk",
         "--model", model,
-        "--session-id", session_id,
         "--max-budget-usd", str(job.get("max_budget", 2.0)),
         "--effort", effort,
-        "-p", job["prompt"],
     ]
+
+    if resume_session_id:
+        cmd += ["--resume", resume_session_id, "-p", job["prompt"]]
+    else:
+        cmd += ["--session-id", session_id, "-p", job["prompt"]]
 
     if job.get("use_worktree"):
         cmd.append("--worktree")
