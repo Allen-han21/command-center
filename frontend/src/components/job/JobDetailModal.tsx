@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { jobs as jobsApi, type Job, type JobOutputLine } from "../../lib/api";
 
@@ -69,7 +70,7 @@ export function JobDetailModal({ job, onClose, onContinue }: Props) {
 
         {/* Metadata grid */}
         <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs mb-4">
-          <Meta label="ID" value={job.id} mono />
+          <CopyMeta label="ID" value={job.id} />
           <Meta label="Priority" value={`P${job.priority}`} />
           <Meta label="Model" value={job.model} />
           <Meta label="Effort" value={job.effort} />
@@ -79,8 +80,8 @@ export function JobDetailModal({ job, onClose, onContinue }: Props) {
           <Meta label="Work Dir" value={job.work_dir} mono />
           <Meta label="Retries" value={`${job.retry_count}/${job.max_retries}`} />
           {job.jira_ticket && <Meta label="JIRA" value={job.jira_ticket} />}
-          {job.session_id && <Meta label="Session" value={job.session_id.slice(0, 8)} mono />}
-          {job.parent_job_id && <Meta label="Parent Job" value={job.parent_job_id.slice(0, 8)} mono />}
+          {job.session_id && <CopyMeta label="Session" value={job.session_id} />}
+          {job.parent_job_id && <CopyMeta label="Parent Job" value={job.parent_job_id} />}
           <Meta label="Created" value={formatDT(job.created_at)} />
           {job.started_at && <Meta label="Started" value={formatDT(job.started_at)} />}
           {job.completed_at && <Meta label="Completed" value={formatDT(job.completed_at)} />}
@@ -178,6 +179,28 @@ function Meta({ label, value, mono }: { label: string; value: string; mono?: boo
     <div>
       <span className="text-[var(--color-text-muted)]">{label}</span>
       <span className={`ml-1.5 text-[var(--color-text)] ${mono ? "font-mono" : ""}`}>{value}</span>
+    </div>
+  );
+}
+
+function CopyMeta({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="col-span-3">
+      <span className="text-[var(--color-text-muted)]">{label}</span>
+      <button
+        onClick={handleCopy}
+        className="ml-1.5 font-mono text-[var(--color-text)] hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs"
+        title="Click to copy"
+      >
+        {value}
+        <span className="ml-1.5 text-[10px]">{copied ? "✓ copied" : "📋"}</span>
+      </button>
     </div>
   );
 }

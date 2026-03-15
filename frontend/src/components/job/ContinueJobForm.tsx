@@ -13,7 +13,8 @@ export function ContinueJobForm({ parentJob, onClose }: Props) {
   const qc = useQueryClient();
   const canResume = !!parentJob.session_id;
   const [mode, setMode] = useState<Mode>("new");
-  const [title, setTitle] = useState(`Continue: ${parentJob.title}`);
+  const baseTitle = parentJob.title.replace(/^Continue:\s*/g, "");
+  const [title, setTitle] = useState(`Continue: ${baseTitle}`);
   const [prompt, setPrompt] = useState("");
 
   const mutation = useMutation({
