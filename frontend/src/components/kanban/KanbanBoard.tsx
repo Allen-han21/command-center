@@ -5,12 +5,12 @@ import { KanbanColumn } from "./KanbanColumn";
 import { JobDetailModal } from "../job/JobDetailModal";
 import { ContinueJobForm } from "../job/ContinueJobForm";
 
-const COLUMNS: { status: Job["status"]; label: string; color: string }[] = [
-  { status: "queued", label: "Queued", color: "var(--color-queued)" },
-  { status: "scheduled", label: "Scheduled", color: "var(--color-scheduled)" },
-  { status: "running", label: "Running", color: "var(--color-running)" },
-  { status: "completed", label: "Completed", color: "var(--color-completed)" },
-  { status: "failed", label: "Failed", color: "var(--color-failed)" },
+const COLUMNS: { statuses: Job["status"][]; label: string; color: string }[] = [
+  { statuses: ["queued"], label: "Queued", color: "var(--color-queued)" },
+  { statuses: ["scheduled"], label: "Scheduled", color: "var(--color-scheduled)" },
+  { statuses: ["running"], label: "Running", color: "var(--color-running)" },
+  { statuses: ["completed"], label: "Completed", color: "var(--color-completed)" },
+  { statuses: ["failed", "cancelled"], label: "Failed", color: "var(--color-failed)" },
 ];
 
 export function KanbanBoard() {
@@ -32,8 +32,9 @@ export function KanbanBoard() {
 
   const grouped = COLUMNS.map((col) => ({
     ...col,
+    status: col.statuses[0],
     jobs: allJobs
-      .filter((j) => j.status === col.status)
+      .filter((j) => col.statuses.includes(j.status))
       .sort((a, b) => a.priority - b.priority),
   }));
 
